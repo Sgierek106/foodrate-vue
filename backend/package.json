@@ -1,0 +1,22 @@
+{
+  "name": "foodrate-backend",
+  "version": "1.0.0",
+  "description": "Fastify backend for FoodRate application",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@libsql/client": "^0.14.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^4.28.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}
