@@ -122,10 +122,14 @@ export async function deletePlace(id: number) {
 export async function getFoodRatings(
   familyMemberId?: number,
   foodName?: string,
+  placeId?: number,
+  rating?: number,
 ) {
   const params: Record<string, string> = {};
   if (familyMemberId) params.family_member_id = String(familyMemberId);
   if (foodName) params.food_name = foodName;
+  if (placeId) params.place_id = String(placeId);
+  if (rating) params.rating = String(rating);
   const { data } = await api.get<FoodRating[]>("/food-ratings", { params });
   return data;
 }

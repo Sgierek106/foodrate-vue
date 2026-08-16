@@ -4,9 +4,11 @@ import { db } from "../database";
 export default async function routes(fastify: FastifyInstance) {
   // Get all food ratings (optionally filtered by family member)
   fastify.get("/food-ratings", async (request) => {
-    const { family_member_id, food_name } = request.query as {
+    const { family_member_id, food_name, place_id, rating } = request.query as {
       family_member_id?: string;
       food_name?: string;
+      place_id?: string;
+      rating?: string;
     };
 
     let query = `
@@ -25,6 +27,16 @@ export default async function routes(fastify: FastifyInstance) {
     if (food_name) {
       query += (params.length > 0 ? " AND" : " WHERE") + " fr.food_name LIKE ?";
       params.push(`%${food_name}%`);
+    }
+
+    if (place_id) {
+      query += (params.length > 0 ? " AND" : " WHERE") + " fr.place_id = ?";
+      params.push(parseInt(place_id));
+    }
+
+    if (rating) {
+      query += (params.length > 0 ? " AND" : " WHERE") + " fr.rating = ?";
+      params.push(parseInt(rating));
     }
 
     query += " ORDER BY fr.created_at DESC";

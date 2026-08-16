@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { getFoodRatings, getFamilyMembers, deleteFoodRating } from "@/api";
-import type { FoodRating, FamilyMember } from "@/types";
+import {
+  getFoodRatings,
+  getFamilyMembers,
+  getPlaces,
+  deleteFoodRating,
+} from "@/api";
+import type { FoodRating, FamilyMember, Place } from "@/types";
 
 const router = useRouter();
 
 const ratings = ref<FoodRating[]>([]);
 const members = ref<FamilyMember[]>([]);
+const places = ref<Place[]>([]);
 const selectedMember = ref<string>("");
+const selectedPlace = ref<string>("");
+const selectedRating = ref<string>("");
 const searchQuery = ref("");
 const isLoading = ref(false);
 
@@ -19,7 +27,13 @@ async function loadRatings() {
       ? parseInt(selectedMember.value)
       : undefined;
     const foodName = searchQuery.value || undefined;
-    ratings.value = await getFoodRatings(memberId, foodName);
+    const placeId = selectedPlace.value
+      ? parseInt(selectedPlace.value)
+      : undefined;
+    const rating = selectedRating.value
+      ? parseInt(selectedRating.value)
+      : undefined;
+    ratings.value = await getFoodRatings(memberId, foodName, placeId, rating);
   } finally {
     isLoading.value = false;
   }
@@ -27,6 +41,10 @@ async function loadRatings() {
 
 async function loadMembers() {
   members.value = await getFamilyMembers();
+}
+
+async function loadPlaces() {
+  places.value = await getPlaces();
 }
 
 async function handleDelete(id: number) {
@@ -49,6 +67,7 @@ function formatDate(dateString: string) {
 
 onMounted(() => {
   loadMembers();
+  loadPlaces();
   loadRatings();
   window.addEventListener("rating-created", loadRatings);
   window.addEventListener("member-changed", loadMembers);
@@ -80,6 +99,26 @@ onMounted(() => {
         <option value="">All Members</option>
         <option v-for="member in members" :key="member.id" :value="member.id">
           {{ member.name }}
+        </option>
+      </select>
+      <select
+        v-model="selectedPlace"
+        @change="loadRatings"
+        class="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+      >
+        <option value="">All Places</option>
+        <option v-for="place in places" :key="place.id" :value="place.id">
+          {{ place.name }}
+        </option>
+      </select>
+      <select
+        v-model="selectedRating"
+        @change="loadRatings"
+        class="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+      >
+        <option value="">All Ratings</option>
+        <option v-for="star in 5" :key="star" :value="star">
+          {{ star }} ★
         </option>
       </select>
     </div>
