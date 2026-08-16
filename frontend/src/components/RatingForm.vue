@@ -8,6 +8,7 @@ import {
   getFoodRating,
 } from "@/api";
 import type { FamilyMember, Place } from "@/types";
+import { auth } from "@/auth";
 
 const emit = defineEmits(["ratingCreated"]);
 const props = defineProps<{
@@ -17,18 +18,15 @@ const props = defineProps<{
 const members = ref<FamilyMember[]>([]);
 const places = ref<Place[]>([]);
 
-// Load last selections from localStorage for a better UX
-const lastFamilyMemberId = parseInt(
-  localStorage.getItem("lastFamilyMemberId") || "0",
-  10,
-);
+// Remember the last selected place so consecutive ratings for the same
+// place don't require re-selecting it.
 const lastPlaceId = parseInt(localStorage.getItem("lastPlaceId") || "0", 10);
 
 const formData = ref({
   food_name: "",
   rating: 3,
   notes: "",
-  family_member_id: lastFamilyMemberId,
+  family_member_id: 0,
   place_id: lastPlaceId,
 });
 const isSubmitting = ref(false);
@@ -36,13 +34,7 @@ const hoverRating = ref(0);
 
 const isEditMode = !!props.ratingId;
 
-function saveLastSelections() {
-  if (formData.value.family_member_id) {
-    localStorage.setItem(
-      "lastFamilyMemberId",
-      String(formData.value.family_member_id),
-    );
-  }
+function saveLastPlace() {
   if (formData.value.place_id) {
     localStorage.setItem("lastPlaceId", String(formData.value.place_id));
   }
@@ -51,21 +43,19 @@ function saveLastSelections() {
 async function loadMembers() {
   members.value = await getFamilyMembers();
   if (!isEditMode && members.value.length > 0) {
-    // Prefer the last selection if it still exists, otherwise default to first
-    if (
-      lastFamilyMemberId &&
-      members.value.some((m) => m.id === lastFamilyMemberId)
-    ) {
-      formData.value.family_member_id = lastFamilyMemberId;
-    } else {
-      formData.value.family_member_id = members.value[0].id;
-    }
+    // Default to the logged-in user if they're a family member,
+    // otherwise fall back to the first member in the list.
+    const userEmail = auth.user?.email?.toLowerCase();
+    const currentMember = userEmail
+      ? members.value.find((m) => m.email?.toLowerCase() === userEmail)
+      : undefined;
+    formData.value.family_member_id = (currentMember || members.value[0]).id;
   }
 }
 
 async function loadPlaces() {
   places.value = await getPlaces();
-  // Restore last place selection if it still exists
+  // Restore the last place selection if it still exists
   if (
     !isEditMode &&
     lastPlaceId &&
@@ -105,8 +95,8 @@ async function submitRating() {
       await updateFoodRating(props.ratingId, payload);
     } else {
       await createFoodRating(payload);
-      // Remember the selected family member and place for next time
-      saveLastSelections();
+      // Remember the selected place for the next rating
+      saveLastPlace();
       formData.value.food_name = "";
       formData.value.rating = 3;
       formData.value.notes = "";
