@@ -1,4 +1,4 @@
-import { createClient } from "@libsql/client";
+import { createClient, type InValue } from "@libsql/client";
 import fs from "fs";
 
 // Database Configuration
@@ -41,7 +41,20 @@ function createDatabaseClient() {
   );
 }
 
-const db = createDatabaseClient();
+const client = createDatabaseClient();
+
+/**
+ * Thin wrapper around the libsql client that keeps the familiar
+ * `execute(sql, args?)` calling convention used throughout the routes.
+ * The underlying client (v0.14+) expects a single statement object.
+ */
+const db = {
+  execute(sql: string, args?: InValue[] | Record<string, InValue>) {
+    return args === undefined
+      ? client.execute(sql)
+      : client.execute({ sql, args });
+  },
+};
 
 async function initializeDatabase() {
   await db.execute(`
@@ -96,6 +109,43 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_ratings_place
     ON food_ratings(place_id);
   `);
+
+  // Allowlist of Google accounts permitted to sign in
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS allowed_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Active sign-in sessions (persisted so they survive restarts)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      last_seen_at INTEGER NOT NULL
+    );
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_sessions_last_seen
+    ON sessions(last_seen_at);
+  `);
+
+  // Seed the initial family members (idempotent — only inserts if absent)
+  const initialAllowedUsers = [
+    "sgierek106@gmail.com",
+    "lwkfong@gmail.com",
+    "andrew.gierek@gmail.com",
+    "michael.c.gierek@gmail.com",
+  ];
+  for (const email of initialAllowedUsers) {
+    await db.execute("INSERT OR IGNORE INTO allowed_users (email) VALUES (?)", [
+      email,
+    ]);
+  }
 
   // Add place_id column to food_ratings if it doesn't exist (migration)
   try {

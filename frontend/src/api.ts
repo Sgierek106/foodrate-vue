@@ -11,6 +11,43 @@ const api = axios.create({
   baseURL: "/api",
 });
 
+// If the session expires mid-use, send the browser to Google sign-in
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    const url: string = error.config?.url || "";
+    if (status === 401 && !url.includes("/auth/")) {
+      window.location.href = "/api/auth/login";
+    }
+    return Promise.reject(error);
+  },
+);
+
+export interface AuthUser {
+  email: string;
+  name: string;
+  picture?: string;
+  sub: string;
+}
+
+export async function getMe(): Promise<AuthUser> {
+  const { data } = await api.get<AuthUser>("/auth/me");
+  return data;
+}
+
+export function loginWithGoogle() {
+  // Tell the backend where to return after the Google sign-in completes.
+  // In dev the SPA runs on :5173 while the backend (and the OAuth callback)
+  // live on :3000, so we pass the SPA origin explicitly.
+  const next = encodeURIComponent(window.location.origin + "/");
+  window.location.href = `/api/auth/login?next=${next}`;
+}
+
+export async function logout() {
+  await api.post("/auth/logout");
+}
+
 export async function getFamilyMembers() {
   const { data } = await api.get<FamilyMember[]>("/family-members");
   return data;

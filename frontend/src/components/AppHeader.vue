@@ -1,16 +1,34 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { auth, logout } from "@/auth";
 
 const router = useRouter();
 const route = useRoute();
 
 const isDark = ref(false);
+const showUserMenu = ref(false);
+
+const signOut = async () => {
+  showUserMenu.value = false;
+  await logout();
+};
 
 onMounted(() => {
   const saved = localStorage.getItem("theme");
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   isDark.value = saved ? saved === "dark" : prefersDark;
+  document.documentElement.classList.toggle("dark", isDark.value);
+
+  // Follow OS theme changes when the user hasn't made an explicit choice
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", (e) => {
+      if (!localStorage.getItem("theme")) {
+        isDark.value = e.matches;
+        document.documentElement.classList.toggle("dark", isDark.value);
+      }
+    });
 });
 
 const toggleDark = () => {
@@ -118,6 +136,56 @@ const isSubPage = route.path !== "/";
           </svg>
           Places
         </button>
+
+        <!-- Signed-in user -->
+        <div class="relative">
+          <button
+            @click="showUserMenu = !showUserMenu"
+            class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            :title="auth.user?.email"
+          >
+            <img
+              v-if="auth.user?.picture"
+              :src="auth.user.picture"
+              :alt="auth.user.name"
+              class="h-7 w-7 rounded-full"
+            />
+            <span
+              v-else
+              class="h-7 w-7 rounded-full bg-green-500 text-white text-xs font-semibold flex items-center justify-center"
+            >
+              {{ auth.user?.name?.charAt(0)?.toUpperCase() }}
+            </span>
+            <span
+              class="hidden sm:inline text-sm text-gray-600 dark:text-gray-300 max-w-[10rem] truncate"
+            >
+              {{ auth.user?.name }}
+            </span>
+          </button>
+          <div
+            v-if="showUserMenu"
+            class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10"
+          >
+            <div
+              class="px-4 py-2 border-b border-gray-100 dark:border-gray-700"
+            >
+              <p
+                class="text-sm font-medium text-gray-900 dark:text-white truncate"
+              >
+                {{ auth.user?.name }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {{ auth.user?.email }}
+              </p>
+            </div>
+            <button
+              @click="signOut"
+              class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
 
         <!-- Dark Mode Toggle -->
         <button

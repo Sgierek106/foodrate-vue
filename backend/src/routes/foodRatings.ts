@@ -97,7 +97,7 @@ export default async function routes(fastify: FastifyInstance) {
         LEFT JOIN places p ON fr.place_id = p.id
         WHERE fr.id = ?
       `,
-        [result.lastInsertRowid],
+        [Number(result.lastInsertRowid)],
       );
 
       return reply.code(201).send(rows[0]);
@@ -150,7 +150,7 @@ export default async function routes(fastify: FastifyInstance) {
 
     const current = existing.rows[0];
     const food_name = body.food_name?.trim() || current.food_name;
-    const rating = body.rating ?? current.rating;
+    const rating = body.rating ?? Number(current.rating);
     const notes = body.notes ?? current.notes;
     const family_member_id = body.family_member_id ?? current.family_member_id;
     const place_id = body.place_id ?? current.place_id;

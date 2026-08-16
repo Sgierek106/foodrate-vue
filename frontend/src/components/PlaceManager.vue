@@ -77,8 +77,8 @@ async function addPlace() {
       state: newState.value.trim() || undefined,
       zip: newZip.value.trim() || undefined,
       country: newCountry.value.trim() || undefined,
-      latitude: newLatitude.value,
-      longitude: newLongitude.value,
+      latitude: newLatitude.value ?? undefined,
+      longitude: newLongitude.value ?? undefined,
     });
     resetForm();
     await loadPlaces();
@@ -102,6 +102,10 @@ function resetForm() {
   searchQuery.value = "";
   searchResults.value = [];
   showSearchDropdown.value = false;
+}
+
+function hideSearchDropdown() {
+  setTimeout(() => (showSearchDropdown.value = false), 200);
 }
 
 async function searchLocation() {
@@ -325,9 +329,7 @@ onMounted(() => {
               v-model="searchQuery"
               @input="searchLocation"
               @focus="showSearchDropdown = searchResults.length > 0"
-              @blur.self="
-                () => setTimeout(() => (showSearchDropdown = false), 200)
-              "
+              @blur.self="hideSearchDropdown"
               type="text"
               placeholder="Start typing to search locations..."
               class="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -370,7 +372,7 @@ onMounted(() => {
             class="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto dark:bg-gray-700 dark:border-gray-600"
           >
             <button
-              v-for="(result, index) in searchResults"
+              v-for="result in searchResults"
               :key="result.place_id"
               type="button"
               @click="selectSearchResult(result)"

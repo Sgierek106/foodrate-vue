@@ -49,7 +49,7 @@ export default async function routes(fastify: FastifyInstance) {
         return reply.code(502).send({ error: "Google Maps API error" });
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
 
       if (data.status === "OK" || data.status === "ZERO_RESULTS") {
         return data.predictions || [];
@@ -109,7 +109,7 @@ export default async function routes(fastify: FastifyInstance) {
         return reply.code(502).send({ error: "Google Maps API error" });
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
 
       if (data.status === "OK") {
         return data.result;

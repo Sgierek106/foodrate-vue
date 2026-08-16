@@ -1,11 +1,14 @@
 import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import cookie from "@fastify/cookie";
 import { initializeDatabase } from "./database";
 import familyMembersRoutes from "./routes/familyMembers";
 import foodRatingsRoutes from "./routes/foodRatings";
 import placesRoutes from "./routes/places";
 import googleMapsRoutes from "./routes/googleMaps";
+import authRoutes from "./routes/auth";
+import { requireAuth } from "./auth/guard";
 
 const server = Fastify({
   logger: true,
@@ -18,15 +21,22 @@ async function start() {
       origin: true,
       credentials: true,
     });
+    await server.register(cookie);
 
     // Initialize database
     await initializeDatabase();
 
-    // Register routes
-    await server.register(familyMembersRoutes, { prefix: "/api" });
-    await server.register(foodRatingsRoutes, { prefix: "/api" });
-    await server.register(placesRoutes, { prefix: "/api" });
-    await server.register(googleMapsRoutes, { prefix: "/api" });
+    // Auth routes are public (the login flow itself)
+    await server.register(authRoutes, { prefix: "/api" });
+
+    // All data routes are wrapped in a plugin that requires a valid session
+    await server.register(async (protectedApi) => {
+      requireAuth(protectedApi);
+      await protectedApi.register(familyMembersRoutes, { prefix: "/api" });
+      await protectedApi.register(foodRatingsRoutes, { prefix: "/api" });
+      await protectedApi.register(placesRoutes, { prefix: "/api" });
+      await protectedApi.register(googleMapsRoutes, { prefix: "/api" });
+    });
 
     // Health check endpoint
     server.get("/health", async () => {
