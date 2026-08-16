@@ -6,6 +6,7 @@ import {
   getSession,
   type SessionUser,
 } from "../auth/session";
+import { db } from "../database";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -187,6 +188,25 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply
         .code(502)
         .send({ error: "Google profile did not include an email address" });
+    }
+
+    // Sign-in allowlist: family_members doubles as the list of permitted
+    // Google accounts. An empty table means open access; once it has
+    // records, only those emails may sign in.
+    const { rows: memberCountRows } = await db.execute(
+      "SELECT COUNT(*) AS count FROM family_members",
+    );
+    if (Number(memberCountRows[0].count) > 0) {
+      const { rows: matches } = await db.execute(
+        "SELECT id FROM family_members WHERE email = ? COLLATE NOCASE",
+        [profile.email],
+      );
+      if (matches.length === 0) {
+        return reply.code(403).send({
+          error:
+            "This Google account is not on the family list. Ask a family member to add your email address.",
+        });
+      }
     }
 
     const user: SessionUser = {

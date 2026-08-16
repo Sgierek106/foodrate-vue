@@ -110,15 +110,6 @@ async function initializeDatabase() {
     ON food_ratings(place_id);
   `);
 
-  // Allowlist of Google accounts permitted to sign in
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS allowed_users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
   // Active sign-in sessions (persisted so they survive restarts)
   await db.execute(`
     CREATE TABLE IF NOT EXISTS sessions (
@@ -134,18 +125,9 @@ async function initializeDatabase() {
     ON sessions(last_seen_at);
   `);
 
-  // Seed the initial family members (idempotent — only inserts if absent)
-  const initialAllowedUsers = [
-    "sgierek106@gmail.com",
-    "lwkfong@gmail.com",
-    "andrew.gierek@gmail.com",
-    "michael.c.gierek@gmail.com",
-  ];
-  for (const email of initialAllowedUsers) {
-    await db.execute("INSERT OR IGNORE INTO allowed_users (email) VALUES (?)", [
-      email,
-    ]);
-  }
+  // The old allowed_users table has been replaced by family_members (which
+  // now stores emails) as the sign-in allowlist. Drop it if it still exists.
+  await db.execute("DROP TABLE IF EXISTS allowed_users");
 
   // Add place_id column to food_ratings if it doesn't exist (migration)
   try {
@@ -167,6 +149,15 @@ async function initializeDatabase() {
     } catch (error: any) {
       // Column already exists, ignore
     }
+  }
+
+  // Add email column to family_members if it doesn't exist (migration)
+  try {
+    await db.execute(`
+      ALTER TABLE family_members ADD COLUMN email TEXT;
+    `);
+  } catch (error: any) {
+    // Column already exists, ignore
   }
 }
 

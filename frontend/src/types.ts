@@ -1,6 +1,7 @@
 export interface FamilyMember {
   id: number;
   name: string;
+  email: string | null;
   created_at: string;
 }
 

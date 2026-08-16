@@ -53,8 +53,23 @@ export async function getFamilyMembers() {
   return data;
 }
 
-export async function createFamilyMember(name: string) {
-  const { data } = await api.post<FamilyMember>("/family-members", { name });
+export async function createFamilyMember(name: string, email: string) {
+  const { data } = await api.post<FamilyMember>("/family-members", {
+    name,
+    email,
+  });
+  return data;
+}
+
+export async function updateFamilyMember(
+  id: number,
+  name: string,
+  email: string,
+) {
+  const { data } = await api.put<FamilyMember>(`/family-members/${id}`, {
+    name,
+    email,
+  });
   return data;
 }
 
