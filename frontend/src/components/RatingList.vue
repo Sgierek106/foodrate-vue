@@ -89,18 +89,18 @@ onMounted(() => {
       >
     </div>
 
-    <div class="flex gap-3 mb-6">
+    <div class="flex flex-wrap gap-3 mb-6">
       <input
         v-model="searchQuery"
         @input="loadRatings"
         type="text"
         placeholder="Search by food..."
-        class="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        class="flex-1 min-w-[200px] px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
       />
       <select
         v-model="selectedMember"
         @change="loadRatings"
-        class="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        class="flex-1 min-w-[140px] px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
       >
         <option value="">All Members</option>
         <option v-for="member in members" :key="member.id" :value="member.id">
@@ -110,7 +110,7 @@ onMounted(() => {
       <select
         v-model="selectedPlace"
         @change="loadRatings"
-        class="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        class="flex-1 min-w-[140px] px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
       >
         <option value="">All Places</option>
         <option v-for="place in places" :key="place.id" :value="place.id">
@@ -120,7 +120,7 @@ onMounted(() => {
       <select
         v-model="selectedRating"
         @change="loadRatings"
-        class="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        class="flex-1 min-w-[140px] px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
       >
         <option value="">All Ratings</option>
         <option v-for="star in 5" :key="star" :value="star">
