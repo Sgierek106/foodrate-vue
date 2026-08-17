@@ -134,14 +134,28 @@ export async function getFoodRatings(
   return data;
 }
 
-export async function createFoodRating(rating: {
-  food_name: string;
-  rating: number;
-  notes?: string;
-  family_member_id: number;
-  place_id?: number;
-}) {
-  const { data } = await api.post<FoodRating>("/food-ratings", rating);
+export async function createFoodRating(
+  rating: {
+    food_name: string;
+    rating: number;
+    notes?: string;
+    family_member_id: number;
+    place_id?: number;
+  },
+  photo?: File | null,
+) {
+  let payload: any = rating;
+  if (photo) {
+    const formData = new FormData();
+    formData.append("photo", photo);
+    for (const [key, value] of Object.entries(rating)) {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    }
+    payload = formData;
+  }
+  const { data } = await api.post<FoodRating>("/food-ratings", payload);
   return data;
 }
 
@@ -156,8 +170,24 @@ export async function updateFoodRating(
     food_name?: string;
     rating?: number;
     notes?: string;
+    family_member_id?: number;
+    place_id?: number;
+    /** null removes the existing photo */
+    photo?: null;
   },
+  photo?: File | null,
 ) {
+  if (photo) {
+    const formData = new FormData();
+    formData.append("photo", photo);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    }
+    const { data } = await api.put<FoodRating>(`/food-ratings/${id}`, formData);
+    return data;
+  }
   const { data } = await api.put<FoodRating>(`/food-ratings/${id}`, updates);
   return data;
 }

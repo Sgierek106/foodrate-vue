@@ -1,8 +1,12 @@
 import "dotenv/config";
+import path from "path";
+import fs from "fs";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
+import multipart from "@fastify/multipart";
 import { initializeDatabase } from "./database";
+import { PHOTOS_DIR, ensurePhotosDir } from "./photos";
 import familyMembersRoutes from "./routes/familyMembers";
 import foodRatingsRoutes from "./routes/foodRatings";
 import placesRoutes from "./routes/places";
@@ -22,9 +26,13 @@ async function start() {
       credentials: true,
     });
     await server.register(cookie);
+    await server.register(multipart, {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    });
 
-    // Initialize database
+    // Initialize database and photo storage
     await initializeDatabase();
+    ensurePhotosDir();
 
     // Auth routes are public (the login flow itself)
     await server.register(authRoutes, { prefix: "/api" });
@@ -36,6 +44,20 @@ async function start() {
       await protectedApi.register(foodRatingsRoutes, { prefix: "/api" });
       await protectedApi.register(placesRoutes, { prefix: "/api" });
       await protectedApi.register(googleMapsRoutes, { prefix: "/api" });
+    });
+
+    // Serve uploaded rating photos (public - the app is family-only)
+    server.get("/api/photos/*", async (request, reply) => {
+      const name = decodeURIComponent((request.params as any)["*"]);
+      // Only allow plain file names (no path traversal)
+      if (!name || name.includes("/") || name.includes("\\")) {
+        return reply.code(400).send({ error: "Invalid photo name" });
+      }
+      const filePath = path.join(PHOTOS_DIR, name);
+      if (!fs.existsSync(filePath)) {
+        return reply.code(404).send({ error: "Photo not found" });
+      }
+      return reply.type("image/jpeg").send(fs.createReadStream(filePath));
     });
 
     // Health check endpoint

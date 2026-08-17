@@ -32,7 +32,38 @@ const formData = ref({
 const isSubmitting = ref(false);
 const hoverRating = ref(0);
 
+// Photo: a File to upload, or a preview URL for an existing photo
+const photoFile = ref<File | null>(null);
+const photoPreview = ref<string | null>(null);
+const browseInput = ref<HTMLInputElement | null>(null);
+const cameraInput = ref<HTMLInputElement | null>(null);
+
+function onPhotoSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  if (photoPreview.value && photoPreview.value.startsWith("blob:")) {
+    URL.revokeObjectURL(photoPreview.value);
+  }
+  photoFile.value = file;
+  photoPreview.value = URL.createObjectURL(file);
+  photoRemoved.value = false;
+  // Reset so the same file can be picked again
+  input.value = "";
+}
+
 const isEditMode = !!props.ratingId;
+// In edit mode, tracks whether the existing photo was removed
+const photoRemoved = ref(false);
+
+function removePhoto() {
+  if (photoPreview.value && photoPreview.value.startsWith("blob:")) {
+    URL.revokeObjectURL(photoPreview.value);
+  }
+  photoFile.value = null;
+  photoPreview.value = null;
+  photoRemoved.value = isEditMode;
+}
 
 function saveLastPlace() {
   if (formData.value.place_id) {
@@ -73,6 +104,9 @@ async function loadRating() {
   formData.value.notes = rating.notes || "";
   formData.value.family_member_id = rating.family_member_id;
   formData.value.place_id = rating.place_id || 0;
+  if (rating.photo_path) {
+    photoPreview.value = `/api/photos/${encodeURIComponent(rating.photo_path)}`;
+  }
 }
 
 async function submitRating() {
@@ -92,15 +126,24 @@ async function submitRating() {
     }
 
     if (isEditMode && props.ratingId) {
-      await updateFoodRating(props.ratingId, payload);
+      if (photoFile.value) {
+        // Replace the photo with the newly picked one
+        await updateFoodRating(props.ratingId, payload, photoFile.value);
+      } else if (photoRemoved.value) {
+        // Explicitly remove the existing photo
+        await updateFoodRating(props.ratingId, { ...payload, photo: null });
+      } else {
+        await updateFoodRating(props.ratingId, payload);
+      }
     } else {
-      await createFoodRating(payload);
+      await createFoodRating(payload, photoFile.value);
       // Remember the selected place for the next rating
       saveLastPlace();
       formData.value.food_name = "";
       formData.value.rating = 3;
       formData.value.notes = "";
       formData.value.place_id = 0;
+      removePhoto();
     }
 
     emit("ratingCreated");
@@ -197,6 +240,59 @@ onMounted(() => {
             {{ place.name }}
           </option>
         </select>
+      </div>
+
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300"
+          >Photo (optional)</label
+        >
+        <div v-if="photoPreview" class="relative inline-block">
+          <img
+            :src="photoPreview"
+            alt="Food photo"
+            class="w-full max-h-64 object-cover rounded-md border dark:border-gray-600"
+          />
+          <button
+            type="button"
+            @click="removePhoto"
+            class="absolute top-2 right-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-black/80"
+            title="Remove photo"
+          >
+            ✕
+          </button>
+        </div>
+        <div v-else class="flex gap-2">
+          <button
+            type="button"
+            @click="browseInput?.click()"
+            class="flex-1 px-3 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+          >
+            📁 Browse
+          </button>
+          <button
+            type="button"
+            @click="cameraInput?.click()"
+            class="flex-1 px-3 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+          >
+            📷 Camera
+          </button>
+        </div>
+        <input
+          ref="browseInput"
+          type="file"
+          accept="image/*"
+          class="hidden"
+          @change="onPhotoSelected"
+        />
+        <input
+          ref="cameraInput"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          class="hidden"
+          @change="onPhotoSelected"
+        />
       </div>
 
       <div>

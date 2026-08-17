@@ -159,6 +159,15 @@ async function initializeDatabase() {
   } catch (error: any) {
     // Column already exists, ignore
   }
+
+  // Add photo_path column to food_ratings if it doesn't exist (migration)
+  try {
+    await db.execute(`
+      ALTER TABLE food_ratings ADD COLUMN photo_path TEXT;
+    `);
+  } catch (error: any) {
+    // Column already exists, ignore
+  }
 }
 
 export { db, initializeDatabase };

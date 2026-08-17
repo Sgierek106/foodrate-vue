@@ -1,5 +1,57 @@
+import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { FastifyInstance } from "fastify";
 import { db } from "../database";
+import { PHOTOS_DIR } from "../photos";
+
+/**
+ * Parse a rating request body. Handles both JSON and multipart/form-data
+ * (the latter is used when a photo file is uploaded). Returns the form
+ * fields plus the stored photo file name (or null if none was uploaded).
+ */
+async function parseRatingRequest(request: any): Promise<{
+  fields: Record<string, string>;
+  photo: string | null;
+}> {
+  if (!request.isMultipart()) {
+    return {
+      fields: (request.body || {}) as Record<string, string>,
+      photo: null,
+    };
+  }
+
+  const fields: Record<string, string> = {};
+  let photo: string | null = null;
+  const parts = await request.parts();
+  for await (const part of parts) {
+    if (part.type === "file") {
+      if (part.fieldname === "photo" && !photo) {
+        const ext = path.extname(part.filename || "").toLowerCase();
+        const safeExt = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext)
+          ? ext
+          : ".jpg";
+        const name = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${safeExt}`;
+        const buffer = await part.toBuffer();
+        fs.writeFileSync(path.join(PHOTOS_DIR, name), buffer);
+        photo = name;
+      }
+    } else if (part.type === "field") {
+      fields[part.fieldname] = part.value;
+    }
+  }
+  return { fields, photo };
+}
+
+function deletePhotoFile(photoPath: string | null | undefined) {
+  if (!photoPath) return;
+  const filePath = path.join(PHOTOS_DIR, path.basename(photoPath));
+  fs.unlink(filePath, (err) => {
+    if (err && err.code !== "ENOENT") {
+      console.error("Failed to delete photo file:", err);
+    }
+  });
+}
 
 export default async function routes(fastify: FastifyInstance) {
   // Get all food ratings (optionally filtered by family member)
@@ -47,30 +99,37 @@ export default async function routes(fastify: FastifyInstance) {
 
   // Create a food rating
   fastify.post("/food-ratings", async (request, reply) => {
-    const body = request.body as {
-      food_name: string;
-      rating: number;
-      notes?: string;
-      family_member_id: number;
-      place_id?: number;
-    };
+    let parsed;
+    try {
+      parsed = await parseRatingRequest(request);
+    } catch (error: any) {
+      request.log.error(error, "Photo upload failed");
+      return reply.code(400).send({ error: "Photo upload failed" });
+    }
+    const body = parsed.fields;
+    const photoPath = parsed.photo;
 
-    if (!body.food_name || typeof body.food_name !== "string") {
+    const food_name = body.food_name;
+    const rating = Number(body.rating);
+    const family_member_id = Number(body.family_member_id);
+    const place_id = body.place_id ? Number(body.place_id) : null;
+
+    if (!food_name || typeof food_name !== "string" || !food_name.trim()) {
       return reply.code(400).send({ error: "Food name is required" });
     }
 
-    if (!body.rating || body.rating < 1 || body.rating > 5) {
+    if (!rating || rating < 1 || rating > 5) {
       return reply.code(400).send({ error: "Rating must be between 1 and 5" });
     }
 
-    if (!body.family_member_id) {
+    if (!family_member_id) {
       return reply.code(400).send({ error: "Family member ID is required" });
     }
 
     // Verify family member exists
     const memberCheck = await db.execute(
       "SELECT id FROM family_members WHERE id = ?",
-      [body.family_member_id],
+      [family_member_id],
     );
 
     if (memberCheck.rows.length === 0) {
@@ -78,10 +137,10 @@ export default async function routes(fastify: FastifyInstance) {
     }
 
     // Verify place exists if provided
-    if (body.place_id) {
+    if (place_id) {
       const placeCheck = await db.execute(
         "SELECT id FROM places WHERE id = ?",
-        [body.place_id],
+        [place_id],
       );
 
       if (placeCheck.rows.length === 0) {
@@ -91,13 +150,14 @@ export default async function routes(fastify: FastifyInstance) {
 
     try {
       const result = await db.execute(
-        "INSERT INTO food_ratings (food_name, rating, notes, family_member_id, place_id) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO food_ratings (food_name, rating, notes, family_member_id, place_id, photo_path) VALUES (?, ?, ?, ?, ?, ?)",
         [
-          body.food_name.trim(),
-          body.rating,
+          food_name.trim(),
+          rating,
           body.notes || null,
-          body.family_member_id,
-          body.place_id || null,
+          family_member_id,
+          place_id,
+          photoPath,
         ],
       );
 
@@ -143,13 +203,16 @@ export default async function routes(fastify: FastifyInstance) {
   // Update a food rating
   fastify.put("/food-ratings/:id", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as {
-      food_name?: string;
-      rating?: number;
-      notes?: string;
-      family_member_id?: number;
-      place_id?: number;
-    };
+
+    let parsed;
+    try {
+      parsed = await parseRatingRequest(request);
+    } catch (error: any) {
+      request.log.error(error, "Photo upload failed");
+      return reply.code(400).send({ error: "Photo upload failed" });
+    }
+    const body = parsed.fields;
+    const uploadedPhoto = parsed.photo;
 
     const existing = await db.execute(
       "SELECT * FROM food_ratings WHERE id = ?",
@@ -162,10 +225,31 @@ export default async function routes(fastify: FastifyInstance) {
 
     const current = existing.rows[0];
     const food_name = body.food_name?.trim() || current.food_name;
-    const rating = body.rating ?? Number(current.rating);
-    const notes = body.notes ?? current.notes;
-    const family_member_id = body.family_member_id ?? current.family_member_id;
-    const place_id = body.place_id ?? current.place_id;
+    const rating =
+      body.rating !== undefined ? Number(body.rating) : Number(current.rating);
+    const notes = body.notes !== undefined ? body.notes : current.notes;
+    const family_member_id =
+      body.family_member_id !== undefined
+        ? Number(body.family_member_id)
+        : current.family_member_id;
+    const place_id =
+      body.place_id !== undefined
+        ? body.place_id
+          ? Number(body.place_id)
+          : null
+        : current.place_id;
+
+    // Photo handling: a new upload replaces the current photo,
+    // photo: null (JSON) removes it, otherwise keep the existing one.
+    let photoPath: string | null =
+      current.photo_path != null ? String(current.photo_path) : null;
+    if (uploadedPhoto) {
+      deletePhotoFile(photoPath);
+      photoPath = uploadedPhoto;
+    } else if (body.photo === null) {
+      deletePhotoFile(photoPath);
+      photoPath = null;
+    }
 
     if (rating < 1 || rating > 5) {
       return reply.code(400).send({ error: "Rating must be between 1 and 5" });
@@ -199,13 +283,14 @@ export default async function routes(fastify: FastifyInstance) {
     }
 
     await db.execute(
-      "UPDATE food_ratings SET food_name = ?, rating = ?, notes = ?, family_member_id = ?, place_id = ? WHERE id = ?",
+      "UPDATE food_ratings SET food_name = ?, rating = ?, notes = ?, family_member_id = ?, place_id = ?, photo_path = ? WHERE id = ?",
       [
         food_name,
         rating,
         notes,
         family_member_id,
         place_id || null,
+        photoPath,
         parseInt(id),
       ],
     );
@@ -238,6 +323,8 @@ export default async function routes(fastify: FastifyInstance) {
     }
 
     await db.execute("DELETE FROM food_ratings WHERE id = ?", [parseInt(id)]);
+    const deletedPhoto = existing.rows[0].photo_path;
+    deletePhotoFile(deletedPhoto != null ? String(deletedPhoto) : null);
 
     return reply.code(204).send();
   });

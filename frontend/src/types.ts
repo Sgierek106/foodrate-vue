@@ -53,5 +53,10 @@ export interface FoodRating {
   family_member_name: string;
   place_id: number | null;
   place_name: string | null;
+  photo_path: string | null;
   created_at: string;
+}
+
+export function photoUrl(photoPath: string | null | undefined): string | null {
+  return photoPath ? `/api/photos/${encodeURIComponent(photoPath)}` : null;
 }
