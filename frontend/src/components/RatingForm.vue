@@ -32,6 +32,11 @@ const formData = ref({
 const isSubmitting = ref(false);
 const hoverRating = ref(0);
 
+const isEditMode = !!props.ratingId;
+// In edit mode, don't render the form until the existing rating has
+// loaded, so the fields don't flash empty before populating.
+const loading = ref(isEditMode);
+
 // Photo: a File to upload, or a preview URL for an existing photo
 const photoFile = ref<File | null>(null);
 const photoPreview = ref<string | null>(null);
@@ -52,7 +57,6 @@ function onPhotoSelected(event: Event) {
   input.value = "";
 }
 
-const isEditMode = !!props.ratingId;
 // In edit mode, tracks whether the existing photo was removed
 const photoRemoved = ref(false);
 
@@ -97,15 +101,22 @@ async function loadPlaces() {
 }
 
 async function loadRating() {
-  if (!props.ratingId) return;
-  const rating = await getFoodRating(props.ratingId);
-  formData.value.food_name = rating.food_name;
-  formData.value.rating = rating.rating;
-  formData.value.notes = rating.notes || "";
-  formData.value.family_member_id = rating.family_member_id;
-  formData.value.place_id = rating.place_id || 0;
-  if (rating.photo_path) {
-    photoPreview.value = `/api/photos/${encodeURIComponent(rating.photo_path)}`;
+  if (!props.ratingId) {
+    loading.value = false;
+    return;
+  }
+  try {
+    const rating = await getFoodRating(props.ratingId);
+    formData.value.food_name = rating.food_name;
+    formData.value.rating = rating.rating;
+    formData.value.notes = rating.notes || "";
+    formData.value.family_member_id = rating.family_member_id;
+    formData.value.place_id = rating.place_id || 0;
+    if (rating.photo_path) {
+      photoPreview.value = `/api/photos/${encodeURIComponent(rating.photo_path)}`;
+    }
+  } finally {
+    loading.value = false;
   }
 }
 
@@ -152,19 +163,32 @@ async function submitRating() {
   }
 }
 
-onMounted(() => {
-  loadMembers();
-  loadPlaces();
-  if (isEditMode) {
-    loadRating();
-  }
+onMounted(async () => {
   window.addEventListener("member-changed", loadMembers);
   window.addEventListener("place-changed", loadPlaces);
+  if (isEditMode) {
+    // Load everything before showing the form so it renders fully
+    // populated in one go.
+    await Promise.all([loadMembers(), loadPlaces(), loadRating()]);
+  } else {
+    loadMembers();
+    loadPlaces();
+  }
 });
 </script>
 
 <template>
-  <div class="bg-white rounded-lg shadow p-6 dark:bg-gray-800">
+  <div v-if="loading" class="bg-white rounded-lg shadow p-6 dark:bg-gray-800">
+    <div
+      class="flex items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400"
+    >
+      <div
+        class="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"
+      ></div>
+      <span class="text-sm">Loading rating…</span>
+    </div>
+  </div>
+  <div v-else class="bg-white rounded-lg shadow p-6 dark:bg-gray-800">
     <h2 class="text-lg font-semibold mb-4 dark:text-white">
       {{ isEditMode ? "Edit Rating" : "Add Rating" }}
     </h2>
