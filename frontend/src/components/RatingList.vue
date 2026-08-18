@@ -190,7 +190,7 @@ onMounted(() => {
           <div class="flex gap-1.5 ml-2 shrink-0">
             <button
               @click="handleEdit(rating.id)"
-              class="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 active:bg-blue-100 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30 dark:active:bg-blue-900/50"
+              class="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-lg font-medium border-2 border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100 active:bg-blue-200 dark:border-blue-400 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 dark:active:bg-blue-900/80"
               title="Edit rating"
               aria-label="Edit rating"
             >
@@ -198,7 +198,7 @@ onMounted(() => {
             </button>
             <button
               @click="handleDelete(rating.id)"
-              class="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-lg text-gray-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/30 dark:active:bg-red-900/50"
+              class="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-lg font-medium border-2 border-red-500 bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 dark:border-red-400 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 dark:active:bg-red-900/80"
               title="Delete rating"
               aria-label="Delete rating"
             >
