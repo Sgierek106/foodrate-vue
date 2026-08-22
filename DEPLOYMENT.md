@@ -1,6 +1,116 @@
-# On-Premises Deployment Guide
+# Deployment Guide
 
-## Prerequisites
+This app can be deployed either to a **PaaS** (Railway — recommended for a
+public URL with minimal ops) or **on-premises** with Docker Compose. Both use
+the same Dockerfiles.
+
+## PaaS Deployment (Railway)
+
+Railway is a good fit: it builds from your existing Dockerfiles, gives each
+service an HTTPS domain automatically, and supports persistent volumes (needed
+for the SQLite database and uploaded photos).
+
+The app runs as **two services**: `backend` (Fastify API) and `frontend`
+(nginx + Vue SPA). The frontend proxies `/api/*` to the backend, so from the
+browser's point of view everything is same-origin and the session cookie works
+without any CORS setup.
+
+### Prerequisites
+
+- A [Railway](https://railway.app) account
+- Your code pushed to GitHub (this repo already has a remote)
+- Google OAuth client ID/secret (already set up)
+
+### Step 1 — Create the two services
+
+1. In Railway, click **New Project → Deploy from GitHub repo** and select this repo.
+2. Because there are two Dockerfiles in subdirectories, create the services
+   manually:
+   - **New Service → Deploy from GitHub repo**
+   - **backend** service: set **Root Directory** to `backend` (uses `backend/Dockerfile`).
+   - **frontend** service: set **Root Directory** to `frontend` (uses `frontend/Dockerfile`).
+
+### Step 2 — Backend configuration
+
+On the **backend** service:
+
+1. **Variables** tab — add:
+
+   | Variable               | Value                        |
+   | ---------------------- | ---------------------------- |
+   | `GOOGLE_CLIENT_ID`     | your OAuth client ID         |
+   | `GOOGLE_CLIENT_SECRET` | your OAuth client secret     |
+   | `GOOGLE_MAPS_API_KEY`  | (optional) your Maps key     |
+   | `NODE_ENV`             | `production`                 |
+   | `DATABASE_URL`         | `file:/app/data/foodrate.db` |
+   | `DATA_DIR`             | `/app/data`                  |
+   | `PUBLIC_URL`           | _(set in Step 4)_            |
+
+2. **Volumes** tab — add a volume and set the **mount path** to `/app/data`.
+   This persists the SQLite database and uploaded photos across deploys.
+   Without a volume, all data is wiped on every redeploy.
+
+### Step 3 — Frontend configuration
+
+On the **frontend** service:
+
+1. **Variables** tab — add:
+
+   | Variable      | Value             |
+   | ------------- | ----------------- |
+   | `BACKEND_URL` | _(set in Step 4)_ |
+
+   `BACKEND_URL` is the URL nginx forwards `/api/*` to. It defaults to
+   `http://backend:3000` (works with docker-compose) but on Railway you must
+   point it at the backend's public domain.
+
+### Step 4 — Wire up the domains
+
+The two services reference each other, so wire them in this order:
+
+1. **Backend** → **Settings → Networking** → **Generate Domain**. Copy the
+   domain, e.g. `https://abc123.up.railway.app`.
+2. **Frontend** → **Variables** → set `BACKEND_URL=https://abc123.up.railway.app`.
+3. **Frontend** → **Settings → Networking** → **Generate Domain**. Copy the
+   domain, e.g. `https://def456.up.railway.app`.
+4. **Backend** → **Variables** → set `PUBLIC_URL=https://def456.up.railway.app`.
+
+`PUBLIC_URL` is used to build the Google OAuth redirect URI, so it must be the
+domain the user actually visits (the frontend).
+
+### Step 5 — Update Google OAuth
+
+In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
+edit your OAuth client and add:
+
+- **Authorized JavaScript origins**: `https://def456.up.railway.app`
+- **Authorized redirect URIs**: `https://def456.up.railway.app/api/auth/callback`
+
+(Replace with your actual frontend domain.)
+
+### Step 6 — Verify
+
+Open `https://def456.up.railway.app` in your browser. You should see the
+"Sign in with Google" screen. Sign in and confirm you can add a rating and
+upload a photo.
+
+### Notes
+
+- **Custom domain**: In **Settings → Networking** on the frontend service you
+  can add a custom domain (e.g. `foodrate.yourdomain.com`). Railway provisions
+  a TLS certificate automatically. If you do, update `PUBLIC_URL` and the
+  Google OAuth origins/redirect URIs to the custom domain.
+- **Data persistence**: The volume at `/app/data` holds both the database and
+  photos. Download the volume from the Railway dashboard for a backup.
+- **Turso alternative**: To avoid a volume for the database, set `TURSO_URL`
+  and `TURSO_AUTH_TOKEN` instead of `DATABASE_URL`. You'd still need a volume
+  (or object storage) for photos.
+
+---
+
+## On-Premises Deployment
+
+### Prerequisites
 
 - **Docker** and **Docker Compose** installed on the target server
 - Port `80` available (frontend) and optionally port `3000` (backend health checks)
