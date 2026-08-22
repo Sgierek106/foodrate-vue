@@ -36,19 +36,26 @@ On the **backend** service:
 
 1. **Variables** tab — add:
 
-   | Variable               | Value                        |
-   | ---------------------- | ---------------------------- |
-   | `GOOGLE_CLIENT_ID`     | your OAuth client ID         |
-   | `GOOGLE_CLIENT_SECRET` | your OAuth client secret     |
-   | `GOOGLE_MAPS_API_KEY`  | (optional) your Maps key     |
-   | `NODE_ENV`             | `production`                 |
-   | `DATABASE_URL`         | `file:/app/data/foodrate.db` |
-   | `DATA_DIR`             | `/app/data`                  |
-   | `PUBLIC_URL`           | _(set in Step 4)_            |
+   | Variable               | Value                                                 |
+   | ---------------------- | ----------------------------------------------------- |
+   | `GOOGLE_CLIENT_ID`     | your OAuth client ID                                  |
+   | `GOOGLE_CLIENT_SECRET` | your OAuth client secret                              |
+   | `GOOGLE_MAPS_API_KEY`  | (optional) your Maps key                              |
+   | `NODE_ENV`             | `production`                                          |
+   | `DATABASE_URL`         | `file:/app/data/foodrate.db` _(optional — see below)_ |
+   | `DATA_DIR`             | `/app/data`                                           |
+   | `PUBLIC_URL`           | _(set in Step 4)_                                     |
+
+   **Database — pick one:**
+   - **Local SQLite (default):** keep `DATABASE_URL=file:/app/data/foodrate.db`.
+   - **Turso:** omit `DATABASE_URL` and set `TURSO_URL` and `TURSO_AUTH_TOKEN`
+     instead. The backend falls back to Turso automatically when
+     `DATABASE_URL` is not set.
 
 2. **Volumes** tab — add a volume and set the **mount path** to `/app/data`.
-   This persists the SQLite database and uploaded photos across deploys.
-   Without a volume, all data is wiped on every redeploy.
+   This persists uploaded photos (and the SQLite database, if you're not
+   using Turso) across deploys. Without a volume, photos are wiped on every
+   redeploy.
 
 ### Step 3 — Frontend configuration
 
