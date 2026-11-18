@@ -29,11 +29,12 @@ services:
       # Docker forbids hostname: with network_mode: service:..., so set the
       # tailnet machine name via Tailscale's own --hostname flag instead.
       - TS_EXTRA_ARGS=--hostname=foodrate
+      # Userspace networking: the NAS kernel has no /dev/net/tun, so let
+      # Tailscale handle traffic in userspace. Fine for serving one app.
+      - TS_USERSPACE=true
     volumes:
       - tailscale-state:/var/lib/tailscale
       - ./tailscale-serve.json:/etc/tailscale/serve.json:ro
-    devices:
-      - /dev/net/tun
     cap_add:
       - NET_ADMIN
     restart: unless-stopped
