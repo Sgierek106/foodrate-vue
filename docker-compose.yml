@@ -21,7 +21,7 @@ services:
     container_name: foodrate-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${HTTP_PORT:-80}:80"
     depends_on:
       - backend
     networks:

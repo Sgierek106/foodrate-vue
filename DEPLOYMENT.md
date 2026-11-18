@@ -152,7 +152,8 @@ The app will be available at `http://<server-ip>`.
 | `GOOGLE_CLIENT_ID`     | **Yes**                  | —                            | Google OAuth client ID (sign-in)                       |
 | `GOOGLE_CLIENT_SECRET` | **Yes**                  | —                            | Google OAuth client secret (sign-in)                   |
 | `PUBLIC_URL`           | No                       | request `Host` header        | Public URL of the app, used for the OAuth redirect URI |
-| `PORT`                 | No                       | `3000`                       | Backend server port                                    |
+| `HTTP_PORT`            | No                       | `80`                         | Host port the frontend (nginx) is published on         |
+| `PORT`                 | No                       | `3000`                       | Backend server port                                  |
 
 ## Google Sign-In Setup
 
