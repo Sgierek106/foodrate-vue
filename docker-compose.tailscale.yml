@@ -21,12 +21,14 @@ services:
   tailscale:
     image: tailscale/tailscale:latest
     container_name: foodrate-tailscale
-    hostname: foodrate
     network_mode: service:frontend
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_SERVE_CONFIG=/etc/tailscale/serve.json
+      # Docker forbids hostname: with network_mode: service:..., so set the
+      # tailnet machine name via Tailscale's own --hostname flag instead.
+      - TS_EXTRA_ARGS=--hostname=foodrate
     volumes:
       - tailscale-state:/var/lib/tailscale
       - ./tailscale-serve.json:/etc/tailscale/serve.json:ro
