@@ -187,6 +187,45 @@ DATABASE_URL=file:/app/data/foodrate.db
 
 Uncomment and fill in `TURSO_URL` and `TURSO_AUTH_TOKEN` in `.env`.
 
+## Remote Access with Tailscale (recommended)
+
+Avoids router port forwarding and gives the app real HTTPS (required for
+Google OAuth outside the LAN). Only devices on your tailnet can reach it.
+
+### One-time setup
+
+1. Create a free tailnet at https://login.tailscale.com and generate an
+   **auth key** at https://login.tailscale.com/key. Add it to `.env`:
+   `TS_AUTHKEY=tskey-aut
+2. Start the stack with the Tailscale overlay:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.tailscale.yml up -d
+   ```
+3. In the Tailscale admin console, authorize the new `foodrate` machine and
+   enable HTTPS for it (**... → Enable HTTPS**). This provisions a certificate
+   for `foodrate.<your-tailnet>.ts.net`.
+4. The `tailscale serve` config (see `tailscale-serve.json`) terminates TLS
+   and forwards to the frontend. Verify from a tailnet device:
+   ```bash
+   curl https://foodrate.<your-tailnet>.ts.net/health
+   ```
+
+### Point the app at the HTTPS URL
+
+1. `.env`: `PUBLIC_URL=https://foodrate.<your-tailnet>.ts.net` then
+   `docker compose ... up -d` to reload.
+2. Google Cloud Console → OAuth client — add:
+   - Authorized JavaScript origins: `https://foodrate.<your-tailnet>.ts.net`
+   - Authorized redirect URIs: `https://foodrate.<your-tailnet>.ts.net/api/auth/callback`
+
+### Install Tailscale on client devices
+
+Install the Tailscale app (phone/laptop), sign in to the same tailnet, and
+open the `https://foodrate...ts.net` URL. No ports are exposed to the
+internet at any point.
+
+---
+
 ## Useful Commands
 
 ```bash

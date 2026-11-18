@@ -1,0 +1,40 @@
+# Tailscale secure remote-access overlay.
+#
+# Usage (from the repo root on the NAS):
+#   docker compose -f docker-compose.yml -f docker-compose.tailscale.yml up -d
+#
+# Requires TS_AUTHKEY in .env — generate one at https://login.tailscale.com/key
+# (a reusable auth key is fine; tag it "foodrate" so you can revoke it later).
+#
+# How it works: the tailscale container joins the frontend container's network
+# namespace and runs `tailscale serve`, which terminates TLS with a real
+# Let's Encrypt-style cert for <hostname>.<tailnet>.ts.net and forwards to
+# the frontend nginx on localhost:80. No router port forwarding, no exposed
+# ports; only devices on your tailnet can reach the app.
+#
+# After it's up, set in .env:
+#   PUBLIC_URL=https://foodrate.<tailnet>.ts.net
+# and add the matching Google OAuth redirect URI:
+#   https://foodrate.<tailnet>.ts.net/api/auth/callback
+
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: foodrate-tailscale
+    hostname: foodrate
+    network_mode: service:frontend
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/etc/tailscale/serve.json
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+      - ./tailscale-serve.json:/etc/tailscale/serve.json:ro
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+
+volumes:
+  tailscale-state:
