@@ -40,7 +40,7 @@ On the **backend** service:
    | ---------------------- | ----------------------------------------------------- |
    | `GOOGLE_CLIENT_ID`     | your OAuth client ID                                  |
    | `GOOGLE_CLIENT_SECRET` | your OAuth client secret                              |
-   | `GOOGLE_MAPS_API_KEY`  | (optional) your Maps key                              |
+   | `GOOGLE_PLACES_API_KEY`  | (optional) your Maps key                              |
    | `NODE_ENV`             | `production`                                          |
    | `DATABASE_URL`         | `file:/app/data/foodrate.db` _(optional — see below)_ |
    | `DATA_DIR`             | `/app/data`                                           |
@@ -129,7 +129,7 @@ upload a photo.
 cp .env.example .env
 
 # 2. Edit .env - set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET (required)
-#    and GOOGLE_MAPS_API_KEY (optional)
+#    and GOOGLE_PLACES_API_KEY (optional)
 #    The database will use local SQLite by default — no cloud dependency needed
 
 # 3. Build and start
@@ -148,7 +148,7 @@ The app will be available at `http://<server-ip>`.
 | `DATABASE_URL`         | No (uses SQLite default) | `file:/app/data/foodrate.db` | Local SQLite path                                      |
 | `TURSO_URL`            | No                       | —                            | Turso cloud database URL (alternative to SQLite)       |
 | `TURSO_AUTH_TOKEN`     | No                       | —                            | Turso auth token (only if using Turso)                 |
-| `GOOGLE_MAPS_API_KEY`  | No                       | —                            | Google Maps Places API key for autocomplete            |
+| `GOOGLE_PLACES_API_KEY`  | No                       | —                            | Google Maps Places API key for autocomplete            |
 | `GOOGLE_CLIENT_ID`     | **Yes**                  | —                            | Google OAuth client ID (sign-in)                       |
 | `GOOGLE_CLIENT_SECRET` | **Yes**                  | —                            | Google OAuth client secret (sign-in)                   |
 | `PUBLIC_URL`           | No                       | request `Host` header        | Public URL of the app, used for the OAuth redirect URI |
