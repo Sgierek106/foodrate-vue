@@ -68,7 +68,7 @@ On the **frontend** service:
    | `BACKEND_URL` | _(set in Step 4)_ |
 
    `BACKEND_URL` is the URL nginx forwards `/api/*` to. It defaults to
-   `http://backend:3000` (works with docker-compose) but on Railway you must
+   `http://backend:3001` (works with docker-compose) but on Railway you must
    point it at the backend's public domain.
 
 ### Step 4 — Wire up the domains
@@ -120,7 +120,7 @@ upload a photo.
 ### Prerequisites
 
 - **Docker** and **Docker Compose** installed on the target server
-- Port `80` available (frontend) and optionally port `3000` (backend health checks)
+- Port `80` available (frontend) and optionally port `3001` (backend health checks)
 
 ## Quick Start
 
@@ -153,7 +153,7 @@ The app will be available at `http://<server-ip>`.
 | `GOOGLE_CLIENT_SECRET` | **Yes**                  | —                            | Google OAuth client secret (sign-in)                   |
 | `PUBLIC_URL`           | No                       | request `Host` header        | Public URL of the app, used for the OAuth redirect URI |
 | `HTTP_PORT`            | No                       | `80`                         | Host port the frontend (nginx) is published on         |
-| `PORT`                 | No                       | `3000`                       | Backend server port                                  |
+| `PORT`                 | No                       |  `3001`                       | Backend server port                                  |
 
 ## Google Sign-In Setup
 
@@ -169,7 +169,7 @@ The app requires Google sign-in — every API request needs a valid session.
 
 > **Note:** For local development over `http://localhost`, add
 > `http://localhost:5173` (JavaScript origin) and
-> `http://localhost:3000/api/auth/callback` (redirect URI) to the same OAuth
+> `http://localhost:3001/api/auth/callback` (redirect URI) to the same OAuth
 > client. Sessions are stored in memory on the backend, so restarting the
 > backend signs everyone out.
 
@@ -272,7 +272,7 @@ User Browser
               │
               ├─ serves Vue SPA static files
               │
-              └─ proxies /api/* → Backend Container (:3000)
+              └─ proxies /api/* → Backend Container (:3001)
                                          │
                                          ├─ /api/auth/* → Google OAuth (login, callback, me, logout)
                                          │

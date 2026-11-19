@@ -19,7 +19,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # substituted, so nginx's own variables ($uri, $host, ...) are left untouched.
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 # Where the backend lives. Override per environment if the service name differs.
-ENV BACKEND_URL=http://backend:3000
+ENV BACKEND_URL=http://backend:3001
 
 EXPOSE 80
 

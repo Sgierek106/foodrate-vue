@@ -39,7 +39,7 @@ export async function getMe(): Promise<AuthUser> {
 export function loginWithGoogle() {
   // Tell the backend where to return after the Google sign-in completes.
   // In dev the SPA runs on :5173 while the backend (and the OAuth callback)
-  // live on :3000, so we pass the SPA origin explicitly.
+  // live on :3001, so we pass the SPA origin explicitly.
   const next = encodeURIComponent(window.location.origin + "/");
   window.location.href = `/api/auth/login?next=${next}`;
 }

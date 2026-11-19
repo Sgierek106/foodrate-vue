@@ -66,7 +66,7 @@ async function start() {
     });
 
     // Start server
-    const port = parseInt(process.env.PORT || "3000");
+    const port = parseInt(process.env.PORT || "3001");
     await server.listen({ port, host: "0.0.0.0" });
     server.log.info(`Server listening on port ${port}`);
   } catch (err) {

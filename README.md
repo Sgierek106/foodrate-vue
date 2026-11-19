@@ -77,7 +77,7 @@ npm install
 npm run dev
 ```
 
-The frontend dev server runs on `http://localhost:5173` and proxies API requests to the backend on `http://localhost:3000`.
+The frontend dev server runs on `http://localhost:5173` and proxies API requests to the backend on `http://localhost:3001`.
 
 ## API Endpoints
 
