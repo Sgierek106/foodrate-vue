@@ -53,6 +53,7 @@ export interface FoodRating {
   family_member_name: string;
   place_id: number | null;
   place_name: string | null;
+  place_street: string | null;
   photo_path: string | null;
   created_at: string;
 }

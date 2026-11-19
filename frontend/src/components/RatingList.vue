@@ -182,7 +182,10 @@ onMounted(() => {
                 <span>•</span>
                 <span>{{ formatDate(rating.created_at) }}</span>
                 <span v-if="rating.place_name"
-                  >• 📍 {{ rating.place_name }}</span
+                  >• 📍 {{ rating.place_name
+                  }}<template v-if="rating.place_street">
+                    ({{ rating.place_street }})</template
+                  ></span
                 >
               </div>
             </div>

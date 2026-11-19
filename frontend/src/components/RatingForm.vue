@@ -261,7 +261,7 @@ onMounted(async () => {
         >
           <option value="0" disabled>No place selected</option>
           <option v-for="place in places" :key="place.id" :value="place.id">
-            {{ place.name }}
+            {{ place.street ? `${place.name} (${place.street})` : place.name }}
           </option>
         </select>
       </div>

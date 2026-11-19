@@ -64,7 +64,7 @@ export default async function routes(fastify: FastifyInstance) {
     };
 
     let query = `
-      SELECT fr.*, fm.name as family_member_name, p.name as place_name
+      SELECT fr.*, fm.name as family_member_name, p.name as place_name, p.street as place_street
       FROM food_ratings fr
       JOIN family_members fm ON fr.family_member_id = fm.id
       LEFT JOIN places p ON fr.place_id = p.id
@@ -163,7 +163,7 @@ export default async function routes(fastify: FastifyInstance) {
 
       const { rows } = await db.execute(
         `
-        SELECT fr.*, fm.name as family_member_name, p.name as place_name
+        SELECT fr.*, fm.name as family_member_name, p.name as place_name, p.street as place_street
         FROM food_ratings fr
         JOIN family_members fm ON fr.family_member_id = fm.id
         LEFT JOIN places p ON fr.place_id = p.id
@@ -184,7 +184,7 @@ export default async function routes(fastify: FastifyInstance) {
 
     const { rows } = await db.execute(
       `
-      SELECT fr.*, fm.name as family_member_name, p.name as place_name
+      SELECT fr.*, fm.name as family_member_name, p.name as place_name, p.street as place_street
       FROM food_ratings fr
       JOIN family_members fm ON fr.family_member_id = fm.id
       LEFT JOIN places p ON fr.place_id = p.id
@@ -297,7 +297,7 @@ export default async function routes(fastify: FastifyInstance) {
 
     const { rows } = await db.execute(
       `
-      SELECT fr.*, fm.name as family_member_name, p.name as place_name
+      SELECT fr.*, fm.name as family_member_name, p.name as place_name, p.street as place_street
       FROM food_ratings fr
       JOIN family_members fm ON fr.family_member_id = fm.id
       LEFT JOIN places p ON fr.place_id = p.id
